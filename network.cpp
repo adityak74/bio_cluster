@@ -1306,25 +1306,59 @@ double Network::modularity(char *outputFile)
 
 void Network::removeSingle_Double()
 {
-	int prev = 0;
+	int prev = 0, j;
 	Edge* fE;
+  Edge* jPtr;
+  int *markedArr = new int[numVertices];
+  for(int i = 0; i < numVertices; i++)
+    markedArr[i] = 0;
+  
 	//Singleton and Doubleton Removal
     for(int i = 0; i < numVertices; i++)
     {
 	fE = &(vertices[i].firstEdge);
 	if(getDegree(i) == 1)
 	{
-		int j = fE->next->target;
-		if(getDegree(j) == 2)
+    markedArr[i] = 1;
+		j = fE->next->target;
+    std :: cout << "\t---first node : " << i << " ,next node : " << j << "\n\n";
+		if(getDegree(j) == 2 && markedArr[j]==0)
 		{
+      markedArr[j] = 1;
 			while(getDegree(j) == 2)
 			{
-				prev = j;
-				j = (&(vertices[j].firstEdge))->next->target;
-			}
-			removeEdge(j,prev);
-		}
-		removeEdge(i,(fE->next)->target);
+        // std ::cout << "\t---b while first node : " << prev << " ,next node : " << j << "\n\n";
+        prev = j;
+        jPtr = (&(vertices[j].firstEdge));
+        jPtr = jPtr->next;
+        if( markedArr[jPtr->target] ) {
+          jPtr = jPtr->next;
+          j = jPtr->target;
+          std ::cout << "\t---af if prev node : " << prev << " ,next node : " << j << "\n\n";
+        }
+        
+        
+        while ( markedArr[j]==0 && jPtr->next != NULL && getDegree(j)==2 ) {
+          jPtr = jPtr->next;
+          j = jPtr->target;
+          // std ::cout << "\t---while while node : " << j << "\n\n";
+        }
+        // std ::cout << "\t---while first node : " << prev << " ,next node : " << j << "\n\n";
+      }
+      
+      
+      if ( getDegree(j) != 1) {
+        removeEdge(j,prev);
+        std ::cout << "\t--- Cutting edge : ( " << j << ", " << prev << ")\n";
+        markedArr[j] = 1; 
+        markedArr[prev] = 1;
+      }
+		} else {
+      std ::cout << "\t--- Single Cutting edge : ( " << i << ", " << (fE->next)->target << ")\n";
+      removeEdge(i,(fE->next)->target);
+      
+    }
 	}
     }
+    delete [] markedArr;
 }

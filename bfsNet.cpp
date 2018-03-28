@@ -243,9 +243,14 @@ int main(int argc, char ** argv)
   std::cout << dupEdges << " duplicate edges not counted in edge count" << std::endl;
   //if (dupEdges > 0)
   //std::cout << "Highest edge weight recorded for duplicate edges" << std::endl;
-  sparseNet.removeSingle_Double();
-  sparseNet.printEdges("output2749.gml");
   
+  // PROJECT 
+
+  sparseNet.removeSingle_Double();
+  sparseNet.printEdges("output15.gml");
+  sparseNet.bfs("out.15.bfs");
+  
+  // END
   
   t.stop("Timer stopped");
   std::cout << t << " seconds" << std::endl;
