@@ -29,6 +29,8 @@ const int BFS_WG2 = 0; // 1 to output BFS components to .wg2 files
 const double MIN_COMPLETE = 1.1; // print comp. only if less than this value (0.5)
 const int MAX_NUM_COMPS = 500000; // max number of non-singleton components
 const double TOL = 0.000001; // tolerance
+const int POPULATIONSIZE = 100; //Total size of genetic algorithm
+const int NEIGHBORSIZE = 3; // Used to calculate the number of clusters in genetic algorithm
 
 class Edge
 {
@@ -88,6 +90,7 @@ class Network
   int getOriginalDegree(int);     // gets the original degree of vertex
   void setGlobalNetworkGE();      // set the original vertives and edges values from read graph
   void removeSingle_Double();	  //removes singletons and doubletons
+  void cluster_ga(); 			  //Creates new clusters based off of genetic algorithm
 
 private:
   int numVertices; // number of vertices

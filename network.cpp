@@ -1323,36 +1323,164 @@ void Network::removeSingle_Double()
 			markedArr[i] = 1;
 			j = fE->next->target;
 			std :: cout << "\t---first node : " << i << " ,next node : " << j << "\n\n";
-			while(getDegree(j) == 2 && markedArr[j] == 0)
+			if(getDegree(j) == 2 && markedArr[j] == 0)
 			{
-				markedArr[j] = 1;
-				std ::cout << "\t While loop degree two: prev " << prev << " ,next node : " << j << "\n\n";
-				prev = j;
-				jPtr = (&(vertices[j].firstEdge));
-				jPtr = jPtr->next;
-				if( markedArr[jPtr->target] ) 
+				while(getDegree(j) == 2 && markedArr[j] == 0)
 				{
+					markedArr[j] = 1;
+					std ::cout << "\t While loop degree two: prev " << prev << " ,next node : " << j << "\n\n";
+					prev = j;
+					jPtr = (&(vertices[j].firstEdge));
 					jPtr = jPtr->next;
+					if( markedArr[jPtr->target] ) 
+					{
+						jPtr = jPtr->next;
+						j = jPtr->target;
+						std ::cout << "\t Moving to next node: prev " << prev << " ,next node : " << j << "\n\n";
+					}
 					j = jPtr->target;
-					std ::cout << "\t Moving to next node: prev " << prev << " ,next node : " << j << "\n\n";
+					std ::cout << "\t Moved j and prev: prev " << prev << " ,j : " << j << "\n\n";
 				}
-				j = jPtr->target;
-				std ::cout << "\t Moved j and prev: prev " << prev << " ,j : " << j << "\n\n";
-			}
-			if ( getDegree(j) != 1) 
-			{
+
 				removeEdge(j,prev);
 				std ::cout << "\t Cutting edge of Multi Degree : ( " << j << ", " << prev << ")\n";
 				markedArr[j] = 1; 
 				markedArr[prev] = 1;
 			}
-			
-			markedArr[j] = 1;
-			std ::cout << "\t--- Single Cutting edge : ( " << i << ", " << j << ")\n";
-			removeEdge(i,j);
+			else
+			{
+				removeEdge(i,j);
+				markedArr[j] = 1;
+				std ::cout << "\t--- Single Cutting edge : ( " << i << ", " << j << ")\n";
+			}
 		}
+		
 	}
 	
     delete [] markedArr;
+}
+
+void Network::cluster_ga()
+{
+	//Used for genetic algorithm
+	int *gaArr = new int[POPULATIONSIZE][numVertices];
+	int *modularity_gaArr = new int[numVertices];
+	int *edge_gaArr = new int[numVertices*numVertices];
+	
+	//Used to Calculate number of clusters to use
+	int *clusterArr = new int[numVertices / 2 - 2][numVertices];
+	int *modularity_Arr = new int[numVertices];
+	int *edge_Arr = new int[numVertices*numVertices];
+	
+	//Variables
+	int highest_val = 0,highest_node = 0;
+	int upperbound = 0, lowerbound = 0;
+	int cluster_size = 0;
+	
+	//Initializes clustering Array
+	for(int i = 0; i < numVertices / 2 - 2; i++)
+	{
+		for(int j = 0; j < numVertices; j++)
+		{
+			clusterArr[i][j] = rand() % j + 2;
+		}
+	}
+	
+	
+	
+	for(int i = 0; i < numVertices / 2 - 2; i++)
+	{
+		//Removes edges that are outside its new cluster
+		for(int j = 0; j < numVertices; j++)
+		{
+			for(int k = j; k < numVertices; k++)
+			{
+				if(clusterArr[i][j] != clusterArr[i][k])
+				{
+					if(removeEdge(j,k))
+					{
+						for(int l = 0; l < numVertices*numVertices; l++)
+						{
+							if(edge_Arr[l] == 0)
+							{
+								edge_Arr[l] = numVertices*j + k;
+								break;
+							}
+						}	
+					}
+				}
+			}
+		}
+		
+		//Gets modularity of the new cluster
+		modularity_Arr[i] = modularity("out.bfs");
+		
+		//Resets the edges in the node
+		for(int j = 0; j < numVertices*numVertices; j++)
+		{
+			addEdge(numVertices / edge_Arr[j] , numVertices % edge_Arr);
+		}
+	}
+	
+	//Finds highest modularity
+	for(int i = 0; i < numVertices / 2 - 2; i++)
+	{
+		if(modularity_Arr[i] > highest_val)
+		{
+			highest_val = modularity_Arr;
+			highest_node = i;
+		}
+	}
+	
+	upper_bound = highest_node + NEIGHBORSIZE;
+	lower_bound = highest_node - NEIGHBORSIZE;
+	
+	//Initializes genetic algorithm array
+	for(int i = 0; i < POPULATIONSIZE; i++)
+	{
+		cluster_size = rand() % upper_bound + lower_bound;
+		for(int j = 0; j < numVertices; j++)
+		{
+			gaArr[i][j] = rand() % cluster_size;
+		}
+	}
+	
+	//Loops through the gaArray
+	for(int i = 0; i < POPULATIONSIZE; i++)
+	{
+		//Removes edges that are outside its new cluster
+		for(int j = 0; j < numVertices; j++)
+		{
+			for(int k = j; k < numVertices; k++)
+			{
+				if(garArr[i][j] != gaArr[i][k])
+				{
+					if(removeEdge(j,k))
+					{
+						for(int l = 0; l < numVertices*numVertices; l++)
+						{
+							if(edge_gaArr[l] == 0)
+							{
+								edge_gaArr[l] = numVertices*j + k;
+								break;
+							}
+						}	
+					}
+				}
+			}
+		}
+		
+		//Gets modularity of the new cluster
+		modularity_gaArr[i] = modularity("out.bfs");
+		
+		//Resets the edges in the node
+		for(int j = 0; j < numVertices*numVertices; j++)
+		{
+			addEdge(numVertices / edge_gaArr[j] , numVertices % edge_gaArr);
+		}
+	}
+	
+	
+	
 }
 
