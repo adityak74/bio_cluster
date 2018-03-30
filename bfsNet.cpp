@@ -249,6 +249,7 @@ int main(int argc, char ** argv)
   sparseNet.removeSingle_Double();
   sparseNet.printEdges("output15.gml");
   sparseNet.bfs("out.15.bfs");
+  sparseNet.cluster_ga();
   
   // END
   

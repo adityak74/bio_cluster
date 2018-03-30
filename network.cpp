@@ -1362,48 +1362,89 @@ void Network::removeSingle_Double()
 
 void Network::cluster_ga()
 {
-	//Used for genetic algorithm
-	int *gaArr = new int[POPULATIONSIZE][numVertices];
-	int *modularity_gaArr = new int[numVertices];
-	int *edge_gaArr = new int[numVertices*numVertices];
-	
-	//Used to Calculate number of clusters to use
-	int *clusterArr = new int[numVertices / 2 - 2][numVertices];
-	int *modularity_Arr = new int[numVertices];
-	int *edge_Arr = new int[numVertices*numVertices];
-	
-	//Variables
-	int highest_val = 0,highest_node = 0;
-	int upperbound = 0, lowerbound = 0;
-	int cluster_size = 0;
-	
-	//Initializes clustering Array
-	for(int i = 0; i < numVertices / 2 - 2; i++)
+	//Gets new number of Vertices in the Cluster after singleton and doubleton removal
+	int mapVertices = 0;
+	for(int i = 0; i < numVertices; i++)
 	{
-		for(int j = 0; j < numVertices; j++)
+		if(getDegree(i) > 1)
 		{
-			clusterArr[i][j] = rand() % j + 2;
+			mapVertices++;
 		}
 	}
 	
+	int *mapArr = new int[mapVertices];
+	int mapArrPos = 0;
+	std::cout << "Mapped Array" << endl;
+	for(int i = 0; i < numVertices; i++)
+	{
+		if(getDegree(i) > 1)
+		{
+			mapArr[mapArrPos++] = i;
+		}
+	}
+	
+	for(int i = 0; i < mapVertices; i++)
+	{
+		std::cout << mapArr[i] << endl;
+	}
+	
+	//Used to Calculate number of clusters to use
+	int **clusterArr = new int*[mapVertices / CLUSTERBOUND - 2];
+	double *modularity_Arr = new double[mapVertices];
+	int *edge_Arr = new int[numEdges];
+	
+	for(int i = 0; i < mapVertices / CLUSTERBOUND - 2; i++)
+	{
+		clusterArr[i] = new int[mapVertices];
+	}
 	
 	
-	for(int i = 0; i < numVertices / 2 - 2; i++)
+	//Used for genetic algorithm
+	int **gaArr = new int*[POPULATIONSIZE];
+	double *modularity_gaArr = new double[mapVertices];
+	int *edge_gaArr = new int[numEdges];
+	
+	for(int i = 0; i < POPULATIONSIZE; i++)
+	{
+		gaArr[i] =  new int[numVertices];
+	}
+	
+	//Variables
+	double highest_val = -1.0;
+	int highest_node = 0;
+	int lower_bound = 0;
+	int cluster_size = 0;
+	
+	//Initializes clustering Array
+	std::cout << "Initial Cluster Array" << endl;
+	for(int i = 0; i < mapVertices / CLUSTERBOUND - 2; i++)
+	{
+		for(int j = 0; j < mapVertices; j++)
+		{
+			clusterArr[i][j] = rand() % (i + 2);
+			//std::cout << clusterArr[i][j] << " ";
+		}
+		//std::cout << endl;
+	}
+	
+	
+	//Gets modularity of each new cluster
+	for(int i = 0; i < mapVertices / CLUSTERBOUND - 2; i++)
 	{
 		//Removes edges that are outside its new cluster
-		for(int j = 0; j < numVertices; j++)
+		for(int j = 0; j < mapVertices; j++)
 		{
-			for(int k = j; k < numVertices; k++)
+			for(int k = j; k < mapVertices; k++)
 			{
 				if(clusterArr[i][j] != clusterArr[i][k])
 				{
-					if(removeEdge(j,k))
+					if(removeEdge(mapArr[j],mapArr[k]))
 					{
-						for(int l = 0; l < numVertices*numVertices; l++)
+						for(int l = 0; l < numEdges; l++)
 						{
 							if(edge_Arr[l] == 0)
 							{
-								edge_Arr[l] = numVertices*j + k;
+								edge_Arr[l] = mapVertices*mapArr[j] + mapArr[k];
 								break;
 							}
 						}	
@@ -1416,52 +1457,64 @@ void Network::cluster_ga()
 		modularity_Arr[i] = modularity("out.bfs");
 		
 		//Resets the edges in the node
-		for(int j = 0; j < numVertices*numVertices; j++)
+		for(int j = 0; j < numEdges; j++)
 		{
-			addEdge(numVertices / edge_Arr[j] , numVertices % edge_Arr);
+			if(edge_Arr[i] != 0)
+			{
+				addEdge(edge_Arr[j] / mapVertices , edge_Arr[j] % mapVertices);				
+			}
 		}
 	}
 	
+	
 	//Finds highest modularity
-	for(int i = 0; i < numVertices / 2 - 2; i++)
+	std::cout << "Modularity" << endl;
+	for(int i = 0; i < mapVertices / CLUSTERBOUND - 2; i++)
 	{
 		if(modularity_Arr[i] > highest_val)
 		{
-			highest_val = modularity_Arr;
-			highest_node = i;
+			highest_val = modularity_Arr[i];
+			highest_node = i + 2;
 		}
+		std::cout << modularity_Arr[i] << endl;
 	}
+	std::cout << "Highest Modularity" << endl << highest_val << endl << "Number of Clusters" << endl << highest_node << endl;
 	
-	upper_bound = highest_node + NEIGHBORSIZE;
+	exit(0);
+	//Sets the lower bound for clusters
 	lower_bound = highest_node - NEIGHBORSIZE;
 	
 	//Initializes genetic algorithm array
+	std::cout << "Genetic Algorithm Array" << endl;
 	for(int i = 0; i < POPULATIONSIZE; i++)
 	{
-		cluster_size = rand() % upper_bound + lower_bound;
-		for(int j = 0; j < numVertices; j++)
+		cluster_size = (rand() % (NEIGHBORSIZE * 2)) + lower_bound;
+		for(int j = 0; j < mapVertices; j++)
 		{
 			gaArr[i][j] = rand() % cluster_size;
+			std::cout << gaArr[i][j] << " " ;
 		}
+		std::cout << endl;
 	}
 	
 	//Loops through the gaArray
+	std::cout << "Genetic Algorithm Modularity" << endl;
 	for(int i = 0; i < POPULATIONSIZE; i++)
 	{
 		//Removes edges that are outside its new cluster
-		for(int j = 0; j < numVertices; j++)
+		for(int j = 0; j < mapVertices; j++)
 		{
-			for(int k = j; k < numVertices; k++)
+			for(int k = j; k < mapVertices; k++)
 			{
-				if(garArr[i][j] != gaArr[i][k])
+				if(gaArr[i][j] != gaArr[i][k])
 				{
-					if(removeEdge(j,k))
+					if(removeEdge(mapArr[j],mapArr[k]))
 					{
-						for(int l = 0; l < numVertices*numVertices; l++)
+						for(int l = 0; l < numEdges; l++)
 						{
 							if(edge_gaArr[l] == 0)
 							{
-								edge_gaArr[l] = numVertices*j + k;
+								edge_gaArr[l] = mapVertices*mapArr[j] + mapArr[k];
 								break;
 							}
 						}	
@@ -1472,15 +1525,23 @@ void Network::cluster_ga()
 		
 		//Gets modularity of the new cluster
 		modularity_gaArr[i] = modularity("out.bfs");
+		std::cout << modularity_gaArr[i] << endl;
 		
 		//Resets the edges in the node
-		for(int j = 0; j < numVertices*numVertices; j++)
+		for(int j = 0; j < numEdges; j++)
 		{
-			addEdge(numVertices / edge_gaArr[j] , numVertices % edge_gaArr);
+			if(edge_gaArr[i] != 0)
+			{
+				addEdge(edge_gaArr[j] / mapVertices , edge_gaArr[i] % mapVertices);
+			}
 		}
 	}
-	
-	
-	
+	delete[] mapArr;
+	delete[] edge_Arr;
+	delete[] edge_gaArr;
+	delete[] modularity_Arr;
+	delete[] modularity_gaArr;
+	delete[] gaArr;
+	delete[] clusterArr;
 }
 
