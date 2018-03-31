@@ -1411,9 +1411,16 @@ void Network::cluster_ga()
 	
 	//Variables
 	double highest_val = -1.0;
+	double second_highest_val = -1.0;
+	double lowest_val = -1.0;
+	double second_lowest_val = -1.0;
 	int highest_node = 0;
+	int second_highest_node = 0;
+	int lowest_node = 0;
+	int second_lowest_node = 0;
 	int lower_bound = 0;
 	int cluster_size = 0;
+	int* ptr;
 	
 	//Initializes clustering Array
 	std::cout << "Initial Cluster Array" << endl;
@@ -1422,48 +1429,16 @@ void Network::cluster_ga()
 		for(int j = 0; j < mapVertices; j++)
 		{
 			clusterArr[i][j] = rand() % (i + 2);
-			//std::cout << clusterArr[i][j] << " ";
+			std::cout << clusterArr[i][j] << " ";
 		}
-		//std::cout << endl;
+		std::cout << endl;
 	}
-	
 	
 	//Gets modularity of each new cluster
 	for(int i = 0; i < mapVertices / CLUSTERBOUND - 2; i++)
 	{
-		//Removes edges that are outside its new cluster
-		for(int j = 0; j < mapVertices; j++)
-		{
-			for(int k = j; k < mapVertices; k++)
-			{
-				if(clusterArr[i][j] != clusterArr[i][k])
-				{
-					if(removeEdge(mapArr[j],mapArr[k]))
-					{
-						for(int l = 0; l < numEdges; l++)
-						{
-							if(edge_Arr[l] == 0)
-							{
-								edge_Arr[l] = mapVertices*mapArr[j] + mapArr[k];
-								break;
-							}
-						}	
-					}
-				}
-			}
-		}
-		
 		//Gets modularity of the new cluster
-		modularity_Arr[i] = modularity("out.bfs");
-		
-		//Resets the edges in the node
-		for(int j = 0; j < numEdges; j++)
-		{
-			if(edge_Arr[i] != 0)
-			{
-				addEdge(edge_Arr[j] / mapVertices , edge_Arr[j] % mapVertices);				
-			}
-		}
+		//modularity_Arr[i] = getModularity();
 	}
 	
 	
@@ -1480,7 +1455,6 @@ void Network::cluster_ga()
 	}
 	std::cout << "Highest Modularity" << endl << highest_val << endl << "Number of Clusters" << endl << highest_node << endl;
 	
-	exit(0);
 	//Sets the lower bound for clusters
 	lower_bound = highest_node - NEIGHBORSIZE;
 	
@@ -1501,41 +1475,123 @@ void Network::cluster_ga()
 	std::cout << "Genetic Algorithm Modularity" << endl;
 	for(int i = 0; i < POPULATIONSIZE; i++)
 	{
-		//Removes edges that are outside its new cluster
-		for(int j = 0; j < mapVertices; j++)
+		//Gets modularity of the new cluster
+		//modularity_gaArr[i] = getModularity();
+		std::cout << modularity_gaArr[i] << endl;
+	}
+	
+	//Crossover and Mutation
+	int *chosenArr = new int[SELECTIONSIZE];
+	int random = 0;
+	
+	//Loops through the Generations
+	for(int i = 0 i < GENERATIONS; i++)
+	{
+		//Loops until Total Population has been changed
+		for(int i = 0; i < POPULATIONSIZE / 2; i++)
 		{
-			for(int k = j; k < mapVertices; k++)
+			//Selecting Parents
+			for(int j = 0; j < SELECTIONSIZE; j++)
 			{
-				if(gaArr[i][j] != gaArr[i][k])
+				random = rand() % mapVertices;
+				for(int k = 0; k < SELECTIONSIZE; k++)
 				{
-					if(removeEdge(mapArr[j],mapArr[k]))
+					if(chosenArr[k] == 0 && random != chosenArr[k])
 					{
-						for(int l = 0; l < numEdges; l++)
-						{
-							if(edge_gaArr[l] == 0)
-							{
-								edge_gaArr[l] = mapVertices*mapArr[j] + mapArr[k];
-								break;
-							}
-						}	
+						chosenArr[k] = random;
+						break;
+					}
+					else
+					{
+						random = rand() % mapVertices;
+						chosenArr[k] = random;
+						break;
 					}
 				}
 			}
-		}
-		
-		//Gets modularity of the new cluster
-		modularity_gaArr[i] = modularity("out.bfs");
-		std::cout << modularity_gaArr[i] << endl;
-		
-		//Resets the edges in the node
-		for(int j = 0; j < numEdges; j++)
-		{
-			if(edge_gaArr[i] != 0)
+			
+			//Selecting best parent
+			for(int j = 0; j < SELECTIONSIZE; j++)
 			{
-				addEdge(edge_gaArr[j] / mapVertices , edge_gaArr[i] % mapVertices);
+				if(modularity_gaArr[chosenArr[j]] > highest_val)
+				{
+					highest_val = modularity_gaArr[chosenArr[j]];
+					highest_node = chosenArr[j];
+				}
 			}
+			
+			//Selecting Second best parent
+			for(int j = 0; j < SELECTIONSIZE; j++)
+			{
+				if(modularity_gaArr[chosenArr[j]] > highest_val && second_highest_val != highest_val)
+				{
+					second_highest_val = modularity_gaArr[chosenArr[j]];
+					second_highest_node = chosenArr[j];
+				}
+			}
+			
+			
+			//Selecting second worst parent
+			for(int j = 0; j < POPULATIONSIZE; j++)
+			{
+				if(modularity_gaArr[j] < lowest_val && j != highest_node && j != second_highest_node)
+				{
+					lowest_val = modularity_gaArr[j];
+					lowest_node = chosenArr[j];
+				}
+			}
+				
+			//Selecting Second worst parent
+			for(int j = 0; j < POPULATIONSIZE; j++)
+			{
+				if(modularity_gaArr[j] < lowest_val && second_lowest_val != lowest_val)
+				{
+					second_lowest_val = modularity_gaArr[j];
+					second_lowest_node = chosenArr[j];
+				}
+			}
+			
+			//Crossover
+			random = rand() % mapVertices;
+			for(int j = random; j < mapVertices; j++)
+			{
+				gaArr[lowest_node][j] = gaArr[highest_node][j];
+				gaArr[second_lowest_node][j] = gaArr[second_highest_node][j];
+			}
+			
+			//Mutation of Worst
+			for(int j = 0; j < mapVertices; j++)
+			{
+				cluster_size = (rand() % (NEIGHBORSIZE * 2)) + lower_bound;
+				random = rand() % 100;
+				if(random < MUTATIONRATE * 100)
+				{
+					gaArr[lowest_node][j] = rand() % cluster_size;
+				}
+			}
+			
+			//Mutation of Second Worst
+			for(int j = 0; j < mapVertices; j++)
+			{
+				cluster_size = (rand() % (NEIGHBORSIZE * 2)) + lower_bound;
+				random = rand() % 100;
+				if(random < MUTATIONRATE * 100)
+				{
+					gaArr[second_lowest_node][j] = rand() % cluster_size;
+				}
+			}
+			
+			//Finds modularity for new Array
+			for(int i = 0; i < POPULATIONSIZE; i++)
+			{
+				//Gets modularity of the new cluster
+				//modularity_gaArr[i] = getModularity();
+				std::cout << modularity_gaArr[i] << endl;
+			}	
 		}
 	}
+	
+	
 	delete[] mapArr;
 	delete[] edge_Arr;
 	delete[] edge_gaArr;
@@ -1543,5 +1599,26 @@ void Network::cluster_ga()
 	delete[] modularity_gaArr;
 	delete[] gaArr;
 	delete[] clusterArr;
+	delete[] chosenArr;
 }
-
+/*
+double getModularity(&int ptr,int mapVertices)
+{
+	int Adj[mapVertices][mapVertices];
+	
+	for (int i = 0; i < numVertices; i++) 
+	{
+		Edge *edgePtr; // pointer to move through linked list of edges
+		edgePtr = &vertices[i].firstEdge; // point to first edge
+		if (edgePtr->next == 0) return; // no edges from this node
+		
+		while (edgePtr->next > 1) 
+		{ // follow until find last edge
+			edgePtr = edgePtr->next; // pointer points at next edge in list
+			
+		}
+	}
+	
+	
+}
+*/

@@ -31,7 +31,10 @@ const int MAX_NUM_COMPS = 500000; // max number of non-singleton components
 const double TOL = 0.000001; // tolerance
 const int POPULATIONSIZE = 50; //Total size of genetic algorithm
 const int NEIGHBORSIZE = 3; // Used to calculate the number of clusters in genetic algorithm
-const int CLUSTERBOUND = 90; // Used to change the size in the 2 deminsional array
+const int CLUSTERBOUND = 3; // Used to change the size in the 2 deminsional array
+const int GENERATIONS = 100; //Amount of generation in crossover and mutation
+const int SELECTIONSIZE = 7; //Used to pick the number of parents in the tournament 
+const double MUTATIONRATE = .05; //Used to decide the percentage chance of mutation
 
 class Edge
 {
@@ -92,6 +95,7 @@ class Network
   void setGlobalNetworkGE();      // set the original vertives and edges values from read graph
   void removeSingle_Double();	  //removes singletons and doubletons
   void cluster_ga(); 			  //Creates new clusters based off of genetic algorithm
+  //double getModularity(&int,int); //Gets Modularity of the new cluster after singltons and doubletons have been removed
 
 private:
   int numVertices; // number of vertices
