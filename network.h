@@ -23,18 +23,30 @@
 
 const int RETAINSYMMETRIC = 1;// 1 to retain both (i,j) and (j,i) (use for BFS)
 const int DESCRIPTIVE_OUTPUT = 0; // 0 for just cluster membership numbers
-const int PRINTCOMPSIZES = 1; // 1 to print summary of component sizes out to "saveCompSizes.txt"
+const int PRINTCOMPSIZES = 0; // 1 to print summary of component sizes out to "saveCompSizes.txt"
 const int BFS_GML = 0; // 1 to output BFS components to .gml files
 const int BFS_WG2 = 0; // 1 to output BFS components to .wg2 files
 const double MIN_COMPLETE = 1.1; // print comp. only if less than this value (0.5)
 const int MAX_NUM_COMPS = 500000; // max number of non-singleton components
 const double TOL = 0.000001; // tolerance
-const int POPULATIONSIZE = 50; //Total size of genetic algorithm
-const int NEIGHBORSIZE = 3; // Used to calculate the number of clusters in genetic algorithm
-const int CLUSTERBOUND = 3; // Used to change the size in the 2 deminsional array
-const int GENERATIONS = 100; //Amount of generation in crossover and mutation
+const int POPULATIONSIZE = 100; //Total size of genetic algorithm
+const int NEIGHBORSIZE = 1; // Used to calculate the number of clusters in genetic algorithm
+const int CLUSTERBOUND = 2; // Used to change the size in the 2 deminsional array
+const int GENERATIONS = 50; //Amount of generation in crossover and mutation
 const int SELECTIONSIZE = 7; //Used to pick the number of parents in the tournament 
-const double MUTATIONRATE = .05; //Used to decide the percentage chance of mutation
+const double MUTATIONRATE = 0.05; //Used to decide the percentage chance of mutation
+
+typedef struct chromosome_map
+{
+  double fitness;
+  int chromosome_index;
+};
+
+inline void breakpt(const char *string)
+{
+  fprintf(stderr, "Breakpoint : %s\n", string);
+  exit(0);
+}
 
 class Edge
 {
@@ -95,7 +107,7 @@ class Network
   void setGlobalNetworkGE();      // set the original vertives and edges values from read graph
   void removeSingle_Double();	  //removes singletons and doubletons
   void cluster_ga(); 			  //Creates new clusters based off of genetic algorithm
-  //double getModularity(&int,int); //Gets Modularity of the new cluster after singltons and doubletons have been removed
+  double getModularity(int&,int); //Gets Modularity of the new cluster after singltons and doubletons have been removed
 
 private:
   int numVertices; // number of vertices

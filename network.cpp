@@ -20,7 +20,7 @@ using namespace std;
 
 Edge::Edge(int endpt, double wt) // create a new edge with default weight of 1
 {  
-  if (weight < 0-TOL) fatal("Negative edge weight");
+  // if (weight < 0-TOL) fatal("Negative edge weight");
   if (endpt < 0)  fatal("Invalid endpoint for edge");
 
   target = endpt; // assign endpoint
@@ -1360,6 +1360,11 @@ void Network::removeSingle_Double()
     delete [] markedArr;
 }
 
+bool chromosome_sorter(const chromosome_map &a, const chromosome_map &b)
+{
+  return a.fitness > b.fitness;
+}
+
 void Network::cluster_ga()
 {
 	//Gets new number of Vertices in the Cluster after singleton and doubleton removal
@@ -1412,8 +1417,8 @@ void Network::cluster_ga()
 	//Variables
 	double highest_val = -1.0;
 	double second_highest_val = -1.0;
-	double lowest_val = -1.0;
-	double second_lowest_val = -1.0;
+	double lowest_val = 1.0;
+	double second_lowest_val = 1.0;
 	int highest_node = 0;
 	int second_highest_node = 0;
 	int lowest_node = 0;
@@ -1438,11 +1443,12 @@ void Network::cluster_ga()
 	for(int i = 0; i < mapVertices / CLUSTERBOUND - 2; i++)
 	{
 		//Gets modularity of the new cluster
-		//modularity_Arr[i] = getModularity();
-	}
-	
-	
-	//Finds highest modularity
+		modularity_Arr[i] = getModularity( *clusterArr[i] , mapVertices);
+  }
+  // breakpoint
+  
+
+  //Finds highest modularity
 	std::cout << "Modularity" << endl;
 	for(int i = 0; i < mapVertices / CLUSTERBOUND - 2; i++)
 	{
@@ -1454,8 +1460,8 @@ void Network::cluster_ga()
 		std::cout << modularity_Arr[i] << endl;
 	}
 	std::cout << "Highest Modularity" << endl << highest_val << endl << "Number of Clusters" << endl << highest_node << endl;
-	
-	//Sets the lower bound for clusters
+  
+  //Sets the lower bound for clusters
 	lower_bound = highest_node - NEIGHBORSIZE;
 	
 	//Initializes genetic algorithm array
@@ -1470,96 +1476,94 @@ void Network::cluster_ga()
 		}
 		std::cout << endl;
 	}
-	
-	//Loops through the gaArray
+  
+  //Loops through the gaArray
 	std::cout << "Genetic Algorithm Modularity" << endl;
 	for(int i = 0; i < POPULATIONSIZE; i++)
 	{
 		//Gets modularity of the new cluster
-		//modularity_gaArr[i] = getModularity();
+		modularity_gaArr[i] = getModularity( *gaArr[i], mapVertices);
 		std::cout << modularity_gaArr[i] << endl;
 	}
-	
-	//Crossover and Mutation
+  
+  //Crossover and Mutation
 	int *chosenArr = new int[SELECTIONSIZE];
 	int random = 0;
 	
+  chromosome_map global_max;
+  global_max.chromosome_index = 0;
+  global_max.fitness = -1.0;
+
 	//Loops through the Generations
-	for(int i = 0 i < GENERATIONS; i++)
+	for(int i = 0; i < GENERATIONS; i++)
 	{
+    
+
 		//Loops until Total Population has been changed
 		for(int i = 0; i < POPULATIONSIZE / 2; i++)
 		{
-			//Selecting Parents
+      chromosome_map selection_cmap[SELECTIONSIZE];
+      chromosome_map cmap[POPULATIONSIZE];
+      for (int i = 0; i < POPULATIONSIZE; i++)
+      {
+        cmap[i].chromosome_index = i;
+        cmap[i].fitness = modularity_gaArr[i];
+      }
+      std::sort(cmap, cmap + POPULATIONSIZE, &chromosome_sorter);
+
+
+      //Selecting Parents
 			for(int j = 0; j < SELECTIONSIZE; j++)
 			{
-				random = rand() % mapVertices;
+				random = rand() % POPULATIONSIZE;
 				for(int k = 0; k < SELECTIONSIZE; k++)
 				{
 					if(chosenArr[k] == 0 && random != chosenArr[k])
 					{
-						chosenArr[k] = random;
+						chosenArr[j] = random;
 						break;
 					}
 					else
 					{
-						random = rand() % mapVertices;
-						chosenArr[k] = random;
+            random = rand() % POPULATIONSIZE;
+            chosenArr[j] = random;
 						break;
 					}
 				}
-			}
-			
-			//Selecting best parent
-			for(int j = 0; j < SELECTIONSIZE; j++)
-			{
-				if(modularity_gaArr[chosenArr[j]] > highest_val)
-				{
-					highest_val = modularity_gaArr[chosenArr[j]];
-					highest_node = chosenArr[j];
-				}
-			}
-			
-			//Selecting Second best parent
-			for(int j = 0; j < SELECTIONSIZE; j++)
-			{
-				if(modularity_gaArr[chosenArr[j]] > highest_val && second_highest_val != highest_val)
-				{
-					second_highest_val = modularity_gaArr[chosenArr[j]];
-					second_highest_node = chosenArr[j];
-				}
-			}
-			
-			
-			//Selecting second worst parent
-			for(int j = 0; j < POPULATIONSIZE; j++)
-			{
-				if(modularity_gaArr[j] < lowest_val && j != highest_node && j != second_highest_node)
-				{
-					lowest_val = modularity_gaArr[j];
-					lowest_node = chosenArr[j];
-				}
-			}
-				
-			//Selecting Second worst parent
-			for(int j = 0; j < POPULATIONSIZE; j++)
-			{
-				if(modularity_gaArr[j] < lowest_val && second_lowest_val != lowest_val)
-				{
-					second_lowest_val = modularity_gaArr[j];
-					second_lowest_node = chosenArr[j];
-				}
-			}
-			
-			//Crossover
+        std :: cout << "Selected : " << chosenArr[j] << "\n";
+        selection_cmap[j].chromosome_index = chosenArr[j];
+        selection_cmap[j].fitness = modularity_gaArr[chosenArr[j]];
+      }
+
+      std::sort(selection_cmap, selection_cmap + SELECTIONSIZE, &chromosome_sorter);
+
+      for(int i = 0; i < SELECTIONSIZE; i++) {
+        std ::cout << selection_cmap[i].chromosome_index << " , " << selection_cmap[i].fitness << std ::endl;
+      }
+      
+      highest_node = selection_cmap[0].chromosome_index;
+      second_highest_node = selection_cmap[1].chromosome_index;
+
+      lowest_node = cmap[POPULATIONSIZE - 1].chromosome_index;
+      second_lowest_node = cmap[POPULATIONSIZE - 2].chromosome_index;
+
+      std::cout << "Highest : " << highest_node << " , Second High : " << second_highest_node << " , Lowest : " << lowest_node << " , Second Lowest : " << second_lowest_node << std :: endl;
+      
+      //Crossover
 			random = rand() % mapVertices;
-			for(int j = random; j < mapVertices; j++)
+      std::cout << "Crossover point : " << random << std :: endl;
+			for(int j = 0; j < mapVertices; j++)
 			{
-				gaArr[lowest_node][j] = gaArr[highest_node][j];
-				gaArr[second_lowest_node][j] = gaArr[second_highest_node][j];
+        if ( j < random ) {
+          gaArr[lowest_node][j] = gaArr[highest_node][j];
+          gaArr[second_lowest_node][j] = gaArr[second_highest_node][j];
+        } else {
+          gaArr[lowest_node][j] = gaArr[second_highest_node][j];
+          gaArr[second_lowest_node][j] = gaArr[highest_node][j];
+        }
 			}
-			
-			//Mutation of Worst
+      
+      //Mutation of Worst
 			for(int j = 0; j < mapVertices; j++)
 			{
 				cluster_size = (rand() % (NEIGHBORSIZE * 2)) + lower_bound;
@@ -1569,8 +1573,8 @@ void Network::cluster_ga()
 					gaArr[lowest_node][j] = rand() % cluster_size;
 				}
 			}
-			
-			//Mutation of Second Worst
+      
+      //Mutation of Second Worst
 			for(int j = 0; j < mapVertices; j++)
 			{
 				cluster_size = (rand() % (NEIGHBORSIZE * 2)) + lower_bound;
@@ -1580,19 +1584,49 @@ void Network::cluster_ga()
 					gaArr[second_lowest_node][j] = rand() % cluster_size;
 				}
 			}
-			
-			//Finds modularity for new Array
+      
+      int max_fitness_chromosome = 0;
+      //Finds modularity for new Array
 			for(int i = 0; i < POPULATIONSIZE; i++)
 			{
-				//Gets modularity of the new cluster
-				//modularity_gaArr[i] = getModularity();
-				std::cout << modularity_gaArr[i] << endl;
-			}	
-		}
+        //Gets modularity of the new cluster
+        modularity_gaArr[i] = getModularity(*gaArr[i], mapVertices);
+        std::cout << modularity_gaArr[i] << endl;
+        if ( global_max.fitness < modularity_gaArr[i] ) {
+          global_max.fitness = modularity_gaArr[i];
+          global_max.chromosome_index = i;
+        }
+			}
+      
+    }
 	}
-	
-	
-	delete[] mapArr;
+
+  std :: cout << "Max :" << global_max.chromosome_index << " , Fitness : " << global_max.fitness << std :: endl;
+
+  for (int j = 0; j < mapVertices; j++)
+  {
+    for (int k = j; k < mapVertices; k++)
+    {
+      if (gaArr[j] != gaArr[k])
+      {
+        if (removeEdge(mapArr[j], mapArr[k]))
+        {
+          for (int l = 0; l < numEdges; l++)
+          {
+            if (edge_Arr[l] == 0)
+            {
+              edge_Arr[l] = mapVertices * mapArr[j] + mapArr[k];
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  bfs("final_clustering.out");
+
+  delete[] mapArr;
 	delete[] edge_Arr;
 	delete[] edge_gaArr;
 	delete[] modularity_Arr;
@@ -1601,24 +1635,75 @@ void Network::cluster_ga()
 	delete[] clusterArr;
 	delete[] chosenArr;
 }
-/*
-double getModularity(&int ptr,int mapVertices)
+
+
+double Network::getModularity(int& ptr, int mapVertices)
 {
-	int Adj[mapVertices][mapVertices];
-	
-	for (int i = 0; i < numVertices; i++) 
-	{
-		Edge *edgePtr; // pointer to move through linked list of edges
-		edgePtr = &vertices[i].firstEdge; // point to first edge
-		if (edgePtr->next == 0) return; // no edges from this node
-		
-		while (edgePtr->next > 1) 
-		{ // follow until find last edge
-			edgePtr = edgePtr->next; // pointer points at next edge in list
-			
-		}
-	}
-	
-	
+  int *p = &ptr;
+  int *edge_Arr = new int[numEdges];
+
+  for(int i = 0; i < numEdges; i++ )
+    edge_Arr[i] = 0;
+
+  int nmapVertices = 0;
+  for (int i = 0; i < numVertices; i++)
+  {
+    if (getDegree(i) > 1)
+    {
+      nmapVertices++;
+    }
+  }
+
+  int *mapArr = new int[nmapVertices];
+  int mapArrPos = 0;
+  std::cout << "Mapped Array" << endl;
+  for (int i = 0; i < numVertices; i++)
+  {
+    if (getDegree(i) > 1)
+    {
+      mapArr[mapArrPos++] = i;
+    }
+  }
+
+  // for (int i = 0; i < nmapVertices; i++)
+  // {
+  //   std::cout << mapArr[i] << endl;
+  // }
+
+  for (int j = 0; j < nmapVertices; j++)
+  {
+    for (int k = j; k < nmapVertices; k++)
+    {
+      if (p[j] != p[k])
+      {
+        if (removeEdge(mapArr[j], mapArr[k]))
+        {
+          for (int l = 0; l < numEdges; l++)
+          {
+            if (edge_Arr[l] == 0)
+            {
+              edge_Arr[l] = nmapVertices * mapArr[j] + mapArr[k];
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  double modularity_value = modularity("temp.mod");
+
+  std::cout << "Adding Edges from Mapped Array" << endl;
+  for (int j = 0; j < numEdges; j++)
+  {
+    if (edge_Arr[j] != 0) {
+      addEdge(edge_Arr[j] / nmapVertices, edge_Arr[j] % nmapVertices);
+    }
+  }
+
+  // delete[] edge_Arr;
+  // delete [] mapArr;
+  // delete p;
+
+  return modularity_value;
 }
-*/
